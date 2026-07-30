@@ -1,0 +1,11 @@
+# Runtime
+streamlit>=1.40          # UI: viewer + panel (st.fragment cần >=1.33)
+openai>=1.55             # structured output json_schema strict
+pymupdf>=1.24            # parse PDF (text + bbox) + render trang -> PNG  [AGPL: xem ARCHITECHTURE.md §6]
+python-pptx>=1.0         # đọc PPTX khi máy không có LibreOffice
+pillow>=10.4             # vẽ overlay highlight lên ảnh trang
+python-dotenv>=1.0       # nạp .env (core/ chạy được ngoài Streamlit)
+pyyaml>=6.0              # eval/golden-set
+
+# Dev
+pytest>=8.3

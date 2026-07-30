@@ -1,7 +1,11 @@
 .env
 .env.*
 !.env.example
+.streamlit/secrets.toml
+codebase/.venv/
+codebase/.cache/
 node_modules/
 __pycache__/
 *.pyc
+.pytest_cache/
 .DS_Store
