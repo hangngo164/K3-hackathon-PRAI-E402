@@ -1,0 +1,2 @@
+case_id,source_ref,case_type,risk_class,input,expected_behavior,grounded,answer_clear,citation_correct,notes
+G001,,normal,,,,,,,
