@@ -1,4 +1,5 @@
-"""Lớp UI Streamlit — chỉ layout và session_state, logic nằm ở core/.
+"""UI Streamlit — chỉ layout + session_state.
 
-Các module sẽ vào đây: state.py  sidebar.py  viewer.py  panel_summary.py  panel_quiz.py
+Import core/ được; core/ không bao giờ import ui/ (STRUCTURE.md §4).
+Không eager-import các submodule ở đây: app.py import thẳng cái nó cần.
 """

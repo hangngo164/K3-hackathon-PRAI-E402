@@ -1,44 +1,81 @@
-"""Khai báo khoá session_state + get/set có kiểm tra.
+"""Khai báo khoá session_state + get/set.
 
-TODO(CP2). Bảng khoá: ARCHITECHTURE.md §13.
-Không gọi core trực tiếp — chỉ giữ trạng thái.
+Bảng khoá: ARCHITECHTURE.md §13. Không gọi core trực tiếp — chỉ giữ trạng thái.
 
 Streamlit chạy lại TOÀN BỘ script sau mỗi tương tác. Mọi thứ đắt (parse, render,
-gọi AI) phải nằm trong cache hoặc session_state, không nằm thẳng trong luồng render.
+gọi AI) phải nằm trong cache hoặc session_state.
 Cache trên đĩa là nguồn sự thật; session_state chỉ là bản sao cho phiên.
 """
 
 from __future__ import annotations
 
-from typing import Any
+import streamlit as st
 
-# Khoá dùng trong st.session_state — không gõ chuỗi tự do ở chỗ khác
-DOC_HASH = "doc_hash"
-PAGE_NO = "page_no"
-SELECTED_BLOCK_IDS = "selected_block_ids"
-SCOPE = "scope"
-TARGET_ID = "target_id"
-RESULTS = "results"  # {(scope, target_id, kind): payload}
-PENDING = "pending"  # job đang chạy => khoá nút, tránh double-submit khi rerun
-COST = "cost"
-
-DEFAULTS: dict[str, Any] = {
-    DOC_HASH: None,
-    PAGE_NO: 1,
-    SELECTED_BLOCK_IDS: [],
-    SCOPE: "page",
-    TARGET_ID: None,
-    RESULTS: {},
-    PENDING: None,
-    COST: {"calls": 0, "tokens": 0},
+DEFAULTS = {
+    "doc_hash": None,
+    "page_no": 1,
+    "selected_block_ids": [],
+    "scope": "page",
+    "target_id": None,
+    "results": {},          # {(scope, target_id, kind): payload}
+    "pending": False,       # job đang chạy => khoá nút, tránh double-submit khi rerun
+    "cost": {"calls": 0, "tokens": 0},
+    "uploaded_file": None,
 }
 
 
-def init() -> None:
+def initialize_session_state() -> None:
     """Gọi một lần ở đầu app.py."""
-    raise NotImplementedError("TODO(CP2)")
+    for key, value in DEFAULTS.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+
+
+def set_uploaded_file(uploaded_file) -> None:
+    st.session_state.uploaded_file = uploaded_file
+
+
+def get_uploaded_file():
+    return st.session_state.uploaded_file
+
+
+def set_doc_hash(doc_hash: str) -> None:
+    st.session_state.doc_hash = doc_hash
+
+
+def get_doc_hash() -> str | None:
+    return st.session_state.doc_hash
+
+
+def set_page_no(page_no: int) -> None:
+    st.session_state.page_no = page_no
+
+
+def get_page_no() -> int:
+    return st.session_state.page_no
+
+
+def set_selected_blocks(block_ids: list[str]) -> None:
+    st.session_state.selected_block_ids = block_ids
+
+
+def get_selected_blocks() -> list[str]:
+    return st.session_state.selected_block_ids
 
 
 def clear_selection() -> None:
-    """Đổi trang thì xoá selection cũ và nói rõ cho người dùng."""
-    raise NotImplementedError("TODO(CP2)")
+    """Đổi trang thì xoá selection cũ — block_id gắn với một trang cụ thể."""
+    st.session_state.selected_block_ids = []
+
+
+def current_scope() -> str:
+    """Có khối đang bôi đen => scope 'selection', ngược lại => 'page'."""
+    return "selection" if st.session_state.selected_block_ids else "page"
+
+
+def set_result(key: tuple, value) -> None:
+    st.session_state.results[key] = value
+
+
+def get_result(key: tuple):
+    return st.session_state.results.get(key)

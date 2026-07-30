@@ -1,16 +1,42 @@
-"""Sidebar: upload · cây outline · trạng thái key · cost phiên.
+"""Sidebar: upload · trạng thái môi trường · cost phiên.
 
-TODO(CP2). Không xử lý file — gọi core.ingest.
+Không xử lý file — chỉ nhận file rồi đưa vào session_state; app.py gọi core.ingest.
+Đường dẫn cache lấy từ core.config, không truyền tay từ app.py.
+TODO(CP4): cây chương/mục (F3.4) khi outline.py dò được thật.
 """
 
 from __future__ import annotations
 
+import streamlit as st
 
-def render() -> None:
-    """Upload (F3.1) + cây chương/mục (F3.4) + trạng thái môi trường + cost.
+from core.config import CACHE_DIR, settings
 
-    Outline bậc 'flat' => nói rõ lý do và DISABLE tóm tắt theo chương/mục kèm
-    giải thích, không hiện nút bấm vào ra rác (HAX G1).
-    Không có API key => nói đúng nguyên nhân, viewer vẫn dùng được.
-    """
-    raise NotImplementedError("TODO(CP2)")
+from . import state
+
+
+def show_sidebar() -> None:
+    st.sidebar.title("Tài liệu")
+    uploaded = st.sidebar.file_uploader("Nạp slide (PDF / PPTX)", type=["pdf", "pptx"])
+    if uploaded is not None:
+        state.set_uploaded_file(uploaded)
+
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("Phiên hiện tại")
+    st.sidebar.write(f"Trang: **{state.get_page_no()}**")
+    st.sidebar.write(f"Scope: **{state.current_scope()}**")
+    selected = state.get_selected_blocks()
+    if selected:
+        st.sidebar.caption(f"Đang bôi đen {len(selected)} khối: {', '.join(selected)}")
+    cost = st.session_state.get("cost", {})
+    st.sidebar.caption(f"Lời gọi AI phiên này: {cost.get('calls', 0)} · token: {cost.get('tokens', 0)}")
+
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("Môi trường")
+    problems = settings().problems()
+    if problems:
+        for problem in problems:
+            st.sidebar.warning(problem)
+        st.sidebar.caption("Viewer và bôi đen vẫn dùng được; chỉ phần gọi AI bị chặn.")
+    else:
+        st.sidebar.success(f"API key OK · model: {settings().model_fast} / {settings().model_main}")
+    st.sidebar.caption(f"Cache: {CACHE_DIR}")

@@ -1,13 +1,14 @@
 """Kiểu dữ liệu dùng chung + serde JSON cho cache.
 
-TODO(CP2). Thiết kế đầy đủ: ARCHITECHTURE.md §5.
-Không parse PDF, không gọi AI — chỉ là hình dạng của dữ liệu.
+Thiết kế: ARCHITECHTURE.md §5. Không parse PDF, không gọi AI.
+Serde nằm ở đây (không ở cache.py) theo STRUCTURE.md §3: cache.py chỉ đọc/ghi,
+không được biết nội dung nghĩa là gì.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 Scope = Literal["document", "chapter", "section", "page", "selection"]
 BBox = tuple[float, float, float, float]  # đơn vị point (72dpi) như PyMuPDF trả về
@@ -22,8 +23,8 @@ class Block:
     order: int
     text: str
     bbox: BBox
-    font_size_max: float = 0.0
-    is_title_like: bool = False
+    font_size_max: float
+    is_title_like: bool
 
 
 @dataclass(frozen=True)
@@ -31,12 +32,8 @@ class Page:
     page_no: int
     blocks: list[Block]
     text: str
-    png_path: str = ""
-
-    @property
-    def char_count(self) -> int:
-        """Dưới config.min_chars_per_page => trang thiên về hình => abstain (lớp ①)."""
-        return len(self.text.strip())
+    png_path: str
+    char_count: int  # dưới settings.min_chars_per_page => trang thiên về hình => abstain (lớp ①)
 
 
 @dataclass(frozen=True)
@@ -73,6 +70,9 @@ class Document:
     chapters: list[Chapter]
     outline_source: Literal["toc", "heuristic", "llm", "flat"]
 
+    def page(self, page_no: int) -> Page | None:
+        return next((p for p in self.pages if p.page_no == page_no), None)
+
 
 @dataclass(frozen=True)
 class ScopeContext:
@@ -80,18 +80,108 @@ class ScopeContext:
 
     scope: Scope
     target_id: str | None
-    unit_ids: list[str]
+    unit_ids: list[str]  # gồm cả id trang VÀ id khối trong phạm vi (verify.py đối chiếu vào đây)
     text: str
     est_tokens: int
     strategy: Literal["direct", "map_reduce"]
+    context_text: str = ""  # ngữ cảnh lân cận — chỉ để model hiểu, KHÔNG tóm tắt vào
+    anchors_available: list[Anchor] | None = None
 
 
 # --- serde cho cache (.cache/<doc_hash>/doc.json) ---
 
 
-def document_to_dict(doc: Document) -> dict:
-    raise NotImplementedError("TODO(CP2): dataclasses.asdict + bbox tuple -> list")
+def document_to_dict(doc: Document) -> dict[str, Any]:
+    return {
+        "doc_hash": doc.doc_hash,
+        "source_name": doc.source_name,
+        "source_kind": doc.source_kind,
+        "outline_source": doc.outline_source,
+        "pages": [
+            {
+                "page_no": p.page_no,
+                "text": p.text,
+                "png_path": str(p.png_path),
+                "char_count": p.char_count,
+                "blocks": [
+                    {
+                        "block_id": b.block_id,
+                        "page_no": b.page_no,
+                        "order": b.order,
+                        "text": b.text,
+                        "bbox": list(b.bbox),
+                        "font_size_max": b.font_size_max,
+                        "is_title_like": b.is_title_like,
+                    }
+                    for b in p.blocks
+                ],
+            }
+            for p in doc.pages
+        ],
+        "chapters": [
+            {
+                "unit_id": c.unit_id,
+                "title": c.title,
+                "page_range": list(c.page_range),
+                "sections": [
+                    {
+                        "unit_id": s.unit_id,
+                        "title": s.title,
+                        "page_range": list(s.page_range),
+                        "chapter_id": s.chapter_id,
+                    }
+                    for s in c.sections
+                ],
+            }
+            for c in doc.chapters
+        ],
+    }
 
 
-def document_from_dict(raw: dict) -> Document:
-    raise NotImplementedError("TODO(CP2): dựng lại Document, bbox list -> tuple")
+def document_from_dict(raw: dict[str, Any]) -> Document:
+    pages = [
+        Page(
+            page_no=p["page_no"],
+            blocks=[
+                Block(
+                    block_id=b["block_id"],
+                    page_no=b["page_no"],
+                    order=b["order"],
+                    text=b["text"],
+                    bbox=tuple(b["bbox"]),
+                    font_size_max=b["font_size_max"],
+                    is_title_like=b["is_title_like"],
+                )
+                for b in p["blocks"]
+            ],
+            text=p["text"],
+            png_path=p["png_path"],
+            char_count=p["char_count"],
+        )
+        for p in raw["pages"]
+    ]
+    chapters = [
+        Chapter(
+            unit_id=c["unit_id"],
+            title=c["title"],
+            page_range=tuple(c["page_range"]),
+            sections=[
+                Section(
+                    unit_id=s["unit_id"],
+                    title=s["title"],
+                    page_range=tuple(s["page_range"]),
+                    chapter_id=s["chapter_id"],
+                )
+                for s in c.get("sections", [])
+            ],
+        )
+        for c in raw.get("chapters", [])
+    ]
+    return Document(
+        doc_hash=raw["doc_hash"],
+        source_name=raw["source_name"],
+        source_kind=raw["source_kind"],
+        pages=pages,
+        chapters=chapters,
+        outline_source=raw.get("outline_source", "flat"),
+    )
