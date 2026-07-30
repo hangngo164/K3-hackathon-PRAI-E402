@@ -1,15 +1,15 @@
-# Prototype Daily Quiz
+# Prototype Daily Quiz — CP2
 
 ## Phạm vi
 
-- Flow end-to-end:
-- Quyết định trung tâm có AI chạy thật:
-- Phần mock:
-- Phần chưa triển khai:
+- Flow end-to-end: nạp PDF/PPTX/PPT → xem trang → chọn khối văn bản → overlay vàng → mở panel tóm tắt/quiz → làm và chấm quiz mock.
+- Quyết định trung tâm có AI chạy thật: chưa có, sẽ triển khai ở CP3.
+- Phần mock: tóm tắt, 5 câu quiz, đáp án và kết quả chấm.
+- Phần chưa triển khai: AI sinh output có căn cứ, verifier, cache/trace, outline và evaluation runner.
 
 ## Cài đặt và chạy
 
-Yêu cầu: Python >= 3.10 (đã kiểm với 3.12.6). LibreOffice là tuỳ chọn — chỉ cần cho đường nhập PPTX.
+Yêu cầu: Python >= 3.10. App ưu tiên Microsoft PowerPoint để giữ layout khi nạp PPTX/PPT, sau đó mới dùng LibreOffice. Không có cả hai, app vẫn đọc PPTX ở chế độ text đơn giản; file PPT legacy cần chuyển sang PDF hoặc cài một công cụ chuyển đổi.
 
 ```powershell
 cd repo\codebase
@@ -34,22 +34,22 @@ streamlit run app.py
 
 Không kích hoạt venv thì gọi trực tiếp: `.\.venv\Scripts\python.exe check_env.py`
 
-## Cấu trúc
+## Cấu trúc CP2
 
 ```
 codebase/
-├── app.py            hiện là trang kiểm tra môi trường; CP2 thay bằng viewer + panel
+├── app.py            layout Streamlit: upload, viewer, panel mock
 ├── check_env.py      kiểm python/package/key/LibreOffice/quyền ghi
 ├── requirements.txt
 ├── .env.example      mẫu biến môi trường (.env thật không commit)
 ├── .streamlit/       config.toml + mẫu secrets.toml
-├── core/             logic thuần Python, KHÔNG import streamlit
-├── ui/               layout Streamlit + session_state
+├── core/             models.py, ingest.py, render.py — thuần Python, không import Streamlit
+├── ui/               state.py, viewer.py, panels.py — layout + session state
 ├── prompts/          prompt có version: summarize.v1.md, quiz.v1.md ...
 └── tests/            pytest
 ```
 
-Thiết kế đầy đủ của từng module: `ARCHITECHTURE.md` §16 (ở repo đề bài).
+Thiết kế đầy đủ của các module sau CP2: `ARCHITECHTURE.md` §16 (ở repo đề bài).
 
 ## Biến môi trường
 

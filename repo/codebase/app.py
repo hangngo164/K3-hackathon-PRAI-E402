@@ -1,85 +1,79 @@
-"""Bước 0 — trang kiểm tra môi trường.
+"""CP2 prototype: upload slides, select text blocks, and complete a mock flow.
 
-TẠM THỜI: file này chỉ để xác nhận Streamlit + PyMuPDF + Pillow + OpenAI chạy được
-trên máy. Ở CP2 nó được thay bằng layout thật (viewer + panel) theo ARCHITECHTURE.md §16.
-
-Chạy:  streamlit run app.py
+Run with: streamlit run app.py
 """
 
 from __future__ import annotations
 
-import io
 import os
-import shutil
 from pathlib import Path
 
 import streamlit as st
 
+from core.ingest import build_document
+from ui.panels import show_panels
+from ui.state import init_state, open_document
+from ui.viewer import show_viewer
+
 HERE = Path(__file__).resolve().parent
 
-st.set_page_config(page_title="Trợ lý Ôn Slide — kiểm tra môi trường", layout="wide")
+st.set_page_config(page_title="Trợ lý Ôn Slide", layout="wide", initial_sidebar_state="expanded")
 
-# st.secrets -> os.environ, để core/ không phải import streamlit (ARCHITECHTURE.md §3)
-for _k in ("OPENAI_API_KEY", "OPENAI_MODEL_FAST", "OPENAI_MODEL_MAIN"):
+
+def _load_settings() -> None:
+    """Make local and Streamlit-hosted secrets available to the later CP3 core."""
+
     try:
-        if _k in st.secrets and not os.getenv(_k):
-            os.environ[_k] = str(st.secrets[_k])
-    except Exception:  # noqa: BLE001 — không có secrets.toml là chuyện bình thường
+        from dotenv import load_dotenv
+
+        load_dotenv(HERE / ".env")
+    except ImportError:
         pass
 
-try:
-    from dotenv import load_dotenv
-
-    load_dotenv(HERE / ".env")
-except ImportError:
-    pass
-
-st.title("Bước 0 — môi trường")
-st.caption("Trang tạm để kiểm tra toolchain. CP2 sẽ thay bằng viewer + panel thật.")
-
-left, right = st.columns([2, 3])
-
-with left:
-    st.subheader("Kiểm tra")
-    rows = []
-    for name, label in [("streamlit", "streamlit"), ("openai", "openai"),
-                        ("fitz", "pymupdf"), ("pptx", "python-pptx"), ("PIL", "pillow")]:
+    for key in ("OPENAI_API_KEY", "OPENAI_MODEL_FAST", "OPENAI_MODEL_MAIN"):
         try:
-            mod = __import__(name)
-            ver = getattr(mod, "__version__", None) or getattr(mod, "version", "?")
-            rows.append({"thành phần": label, "trạng thái": "ok", "chi tiết": str(ver)})
-        except ImportError:
-            rows.append({"thành phần": label, "trạng thái": "THIẾU", "chi tiết": "pip install -r requirements.txt"})
+            if key in st.secrets and not os.getenv(key):
+                os.environ[key] = str(st.secrets[key])
+        except Exception:  # No secrets file is a normal local-development state.
+            pass
 
-    key = os.getenv("OPENAI_API_KEY", "").strip()
-    rows.append({
-        "thành phần": "OPENAI_API_KEY",
-        "trạng thái": "ok" if key and not key.startswith("sk-thay-bang") else "THIẾU",
-        "chi tiết": f"...{key[-4:]}" if key else "điền vào .env",
-    })
-    rows.append({"thành phần": "model FAST", "trạng thái": "ok",
-                 "chi tiết": os.getenv("OPENAI_MODEL_FAST", "(chưa đặt)")})
-    rows.append({"thành phần": "model MAIN", "trạng thái": "ok",
-                 "chi tiết": os.getenv("OPENAI_MODEL_MAIN", "(chưa đặt)")})
-    soffice = shutil.which("soffice") or shutil.which("soffice.exe")
-    rows.append({"thành phần": "LibreOffice", "trạng thái": "ok" if soffice else "thiếu (không chặn)",
-                 "chi tiết": soffice or "PPTX sẽ dùng fallback python-pptx"})
-    st.dataframe(rows, hide_index=True, use_container_width=True)
 
-with right:
-    st.subheader("Thử render một PDF")
-    up = st.file_uploader("Chọn file PDF bất kỳ để xác nhận PyMuPDF render được", type=["pdf"])
-    if up is not None:
-        import fitz
+@st.cache_data(show_spinner="Đang đọc và render slide...")
+def _load_document(file_bytes: bytes, source_name: str, dpi: int):
+    return build_document(file_bytes, source_name, dpi)
 
-        doc = fitz.open(stream=up.getvalue(), filetype="pdf")
-        dpi = int(os.getenv("PAGE_DPI", "110"))
-        page_no = st.number_input("Trang", 1, doc.page_count, 1, key="smoke_page")
-        page = doc[int(page_no) - 1]
-        png = page.get_pixmap(dpi=dpi).tobytes("png")
-        st.image(io.BytesIO(png), caption=f"{up.name} — trang {page_no}/{doc.page_count} @ {dpi}dpi",
-                 use_container_width=True)
-        blocks = [b for b in page.get_text("blocks") if b[4].strip()]
-        st.caption(f"PyMuPDF đọc được {len(blocks)} khối văn bản trên trang này "
-                   f"({len(page.get_text().strip())} ký tự) — nền cho tính năng bôi đen F3.3.")
-        doc.close()
+
+_load_settings()
+init_state()
+
+st.title("Trợ lý Ôn Slide")
+st.caption("CP2: flow bấm được với dữ liệu mock. AI sẽ được tích hợp ở CP3.")
+
+with st.sidebar:
+    st.header("Tài liệu")
+    uploaded = st.file_uploader("Nạp slide", type=["pdf", "ppt", "pptx"])
+    dpi = int(os.getenv("PAGE_DPI", "110"))
+    st.caption(f"Nhận PDF, PPTX, PPT. Render ở {dpi} DPI.")
+
+if uploaded is None:
+    st.info("Nạp một file PDF, PPTX hoặc PPT để bắt đầu ôn slide.")
+    st.stop()
+
+try:
+    document = _load_document(uploaded.getvalue(), uploaded.name, dpi)
+except (OSError, ValueError) as exc:
+    st.error(str(exc))
+    st.stop()
+open_document(document.doc_hash)
+
+with st.sidebar:
+    st.success(f"Đã nạp {document.source_name}")
+    st.caption(f"{len(document.pages)} trang · {sum(len(page.blocks) for page in document.pages)} khối văn bản")
+    st.divider()
+    st.caption("PPT/PPTX ưu tiên chuyển bằng Microsoft PowerPoint để giữ layout. Nếu không có Office, app dùng LibreOffice hoặc bản xem text PPTX.")
+
+viewer_column, panel_column = st.columns([3, 2], gap="large")
+with viewer_column:
+    page, chosen_ids = show_viewer(document, dpi)
+with panel_column:
+    show_panels(document, page, chosen_ids)
