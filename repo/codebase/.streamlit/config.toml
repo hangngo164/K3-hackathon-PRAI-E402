@@ -1,0 +1,8 @@
+[server]
+maxUploadSize = 50        # MB — slide bài giảng hiếm khi vượt
+
+[browser]
+gatherUsageStats = false
+
+[runner]
+fastReruns = true
