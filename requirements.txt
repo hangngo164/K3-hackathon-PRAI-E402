@@ -1,0 +1,3 @@
+# Deploy shim: Streamlit Community Cloud chi doc requirements.txt o root git.
+# Nguon su that van la repo/codebase/requirements.txt - file nay chi tro toi do.
+-r repo/codebase/requirements.txt
