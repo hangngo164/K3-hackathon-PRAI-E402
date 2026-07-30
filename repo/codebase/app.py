@@ -1,85 +1,64 @@
-"""Bước 0 — trang kiểm tra môi trường.
+"""Entrypoint Streamlit — chỉ layout + điều phối, không chứa logic nghiệp vụ.
 
-TẠM THỜI: file này chỉ để xác nhận Streamlit + PyMuPDF + Pillow + OpenAI chạy được
-trên máy. Ở CP2 nó được thay bằng layout thật (viewer + panel) theo ARCHITECHTURE.md §16.
-
-Chạy:  streamlit run app.py
+Layout theo ARCHITECHTURE.md §16: st.columns([3, 2]) — trái viewer, phải panel.
 """
 
 from __future__ import annotations
 
-import io
 import os
-import shutil
-from pathlib import Path
 
 import streamlit as st
 
-HERE = Path(__file__).resolve().parent
+# Đẩy st.secrets vào os.environ TRƯỚC khi import core/ — core không được import
+# streamlit (STRUCTURE.md §4), nên nó chỉ đọc được biến môi trường.
+try:
+    for _key in ("OPENAI_API_KEY", "OPENAI_MODEL_FAST", "OPENAI_MODEL_MAIN"):
+        if _key in st.secrets:
+            os.environ.setdefault(_key, str(st.secrets[_key]))
+except Exception:
+    pass  # không có .streamlit/secrets.toml thì dùng .env, không phải lỗi
 
-st.set_page_config(page_title="Trợ lý Ôn Slide — kiểm tra môi trường", layout="wide")
+from core import ingest  # noqa: E402
+from core.errors import AppError  # noqa: E402
+from ui import panel_quiz, panel_summary, sidebar, state, viewer  # noqa: E402
 
-# st.secrets -> os.environ, để core/ không phải import streamlit (ARCHITECHTURE.md §3)
-for _k in ("OPENAI_API_KEY", "OPENAI_MODEL_FAST", "OPENAI_MODEL_MAIN"):
-    try:
-        if _k in st.secrets and not os.getenv(_k):
-            os.environ[_k] = str(st.secrets[_k])
-    except Exception:  # noqa: BLE001 — không có secrets.toml là chuyện bình thường
-        pass
+st.set_page_config(page_title="Trợ lý Ôn Slide", layout="wide")
+
+state.initialize_session_state()
+sidebar.show_sidebar()
+
+st.title("Trợ lý Ôn Slide")
+
+uploaded = state.get_uploaded_file()
+if uploaded is None:
+    st.info("Nạp một file slide (PDF, hoặc PPTX nếu máy có LibreOffice) để bắt đầu.")
+    st.stop()
+
+
+@st.cache_data(show_spinner=False)
+def _load_document(data: bytes, source_name: str):
+    """Cache theo nội dung file: Streamlit rerun mỗi tương tác, không parse lại."""
+    return ingest.ingest(data, source_name)
+
 
 try:
-    from dotenv import load_dotenv
+    with st.spinner("Đang xử lý tài liệu…"):
+        # getvalue() chứ không read(): read() ở rerun sau trả b"" vì con trỏ ở EOF
+        doc = _load_document(uploaded.getvalue(), uploaded.name)
+except AppError as exc:
+    st.error(exc.user_message)
+    st.stop()
 
-    load_dotenv(HERE / ".env")
-except ImportError:
-    pass
+state.set_doc_hash(doc.doc_hash)
 
-st.title("Bước 0 — môi trường")
-st.caption("Trang tạm để kiểm tra toolchain. CP2 sẽ thay bằng viewer + panel thật.")
+col_view, col_panel = st.columns([3, 2])
 
-left, right = st.columns([2, 3])
+with col_view:
+    viewer.show_viewer(doc)
 
-with left:
-    st.subheader("Kiểm tra")
-    rows = []
-    for name, label in [("streamlit", "streamlit"), ("openai", "openai"),
-                        ("fitz", "pymupdf"), ("pptx", "python-pptx"), ("PIL", "pillow")]:
-        try:
-            mod = __import__(name)
-            ver = getattr(mod, "__version__", None) or getattr(mod, "version", "?")
-            rows.append({"thành phần": label, "trạng thái": "ok", "chi tiết": str(ver)})
-        except ImportError:
-            rows.append({"thành phần": label, "trạng thái": "THIẾU", "chi tiết": "pip install -r requirements.txt"})
-
-    key = os.getenv("OPENAI_API_KEY", "").strip()
-    rows.append({
-        "thành phần": "OPENAI_API_KEY",
-        "trạng thái": "ok" if key and not key.startswith("sk-thay-bang") else "THIẾU",
-        "chi tiết": f"...{key[-4:]}" if key else "điền vào .env",
-    })
-    rows.append({"thành phần": "model FAST", "trạng thái": "ok",
-                 "chi tiết": os.getenv("OPENAI_MODEL_FAST", "(chưa đặt)")})
-    rows.append({"thành phần": "model MAIN", "trạng thái": "ok",
-                 "chi tiết": os.getenv("OPENAI_MODEL_MAIN", "(chưa đặt)")})
-    soffice = shutil.which("soffice") or shutil.which("soffice.exe")
-    rows.append({"thành phần": "LibreOffice", "trạng thái": "ok" if soffice else "thiếu (không chặn)",
-                 "chi tiết": soffice or "PPTX sẽ dùng fallback python-pptx"})
-    st.dataframe(rows, hide_index=True, use_container_width=True)
-
-with right:
-    st.subheader("Thử render một PDF")
-    up = st.file_uploader("Chọn file PDF bất kỳ để xác nhận PyMuPDF render được", type=["pdf"])
-    if up is not None:
-        import fitz
-
-        doc = fitz.open(stream=up.getvalue(), filetype="pdf")
-        dpi = int(os.getenv("PAGE_DPI", "110"))
-        page_no = st.number_input("Trang", 1, doc.page_count, 1, key="smoke_page")
-        page = doc[int(page_no) - 1]
-        png = page.get_pixmap(dpi=dpi).tobytes("png")
-        st.image(io.BytesIO(png), caption=f"{up.name} — trang {page_no}/{doc.page_count} @ {dpi}dpi",
-                 use_container_width=True)
-        blocks = [b for b in page.get_text("blocks") if b[4].strip()]
-        st.caption(f"PyMuPDF đọc được {len(blocks)} khối văn bản trên trang này "
-                   f"({len(page.get_text().strip())} ký tự) — nền cho tính năng bôi đen F3.3.")
-        doc.close()
+with col_panel:
+    tab_summary, tab_quiz = st.tabs(["Tóm tắt", "Quiz"])
+    with tab_summary:
+        panel_summary.show_tab(doc)
+    with tab_quiz:
+        panel_quiz.show_tab(doc)
