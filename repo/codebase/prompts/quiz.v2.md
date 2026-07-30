@@ -1,5 +1,15 @@
 <!-- Hợp đồng output: QUIZ_SCHEMA trong agent_core/schemas.py.
-     Đổi nội dung => tạo quiz.v2.md, KHÔNG sửa tại chỗ.
+     Đổi nội dung => tạo quiz.v3.md, KHÔNG sửa tại chỗ.
+
+     v2 (đổi so với v1): thêm {{avoid_facts}} — danh sách ý ĐÃ HỎI ở các bộ
+     trước của cùng phạm vi. Xin quiz lần hai trên cùng tài liệu mà nhận lại y
+     hệt bộ cũ là lỗi người dùng gặp thật; chỉ bỏ cache thì chưa đủ, vì cùng
+     nguồn + cùng prompt thì model vẫn bám vào đúng những ý nổi nhất.
+
+     Cách chữa KHÔNG phải tăng temperature hay ngẫu nhiên hoá: câu hỏi vẫn phải
+     bám nguồn. Thay vào đó nói thẳng cho model biết ý nào đã dùng rồi, để nó đi
+     tìm ý khác TRONG CÙNG văn bản — đa dạng đến từ việc phủ rộng tài liệu hơn,
+     không đến từ việc bịa thêm.
 
      File này dùng cho CẢ vòng sửa, qua biến {{repair_feedback}}. Cố ý không
      tách prompt riêng cho vòng sửa: luật ràng buộc phải giống hệt lượt sinh
@@ -31,6 +41,15 @@ Hard constraints:
    them into Vietnamese.
 7. If the source is thin, produce FEWER items and say so in `notes` — never pad
    with two questions that test the same fact.
+8. Spread the questions across the source. Do not take every question from the
+   first passage you read: walk the whole scope and pick facts from different
+   parts of it.
+
+When the request lists facts that were already used, treat them as SPENT: do not
+ask about them again, not even reworded or from another angle. Go find different
+material in the SAME source text. If the source genuinely has nothing left, say
+so in `notes` and return fewer items — inventing a question, or dressing up a
+spent fact as a new one, is worse than returning three items.
 
 Field conventions:
 
@@ -59,6 +78,10 @@ keeping technical terms as they appear on the slide.
 - Số câu: {{n_items}} (đã tính dư để bù câu bị loại khi kiểm)
 - Cơ cấu độ khó: {{difficulty_mix}}
 - Trang có trong phạm vi: {{page_list}}
+
+## Ý đã hỏi ở các bộ trước, KHÔNG hỏi lại (bỏ trống nếu là bộ đầu tiên)
+
+{{avoid_facts}}
 
 ## Sửa lỗi lượt trước (bỏ trống nếu là lượt sinh đầu)
 

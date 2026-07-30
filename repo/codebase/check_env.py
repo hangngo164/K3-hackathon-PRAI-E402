@@ -1,6 +1,7 @@
 """Kiểm tra môi trường trước khi build.  Chạy:  python check_env.py [--models] [--ping]
 
-Không phụ thuộc core/ — dùng được ngay khi repo còn trống.
+Chỉ dùng thư viện chuẩn + package bên ngoài; không import `agent_core`/`tools`
+ở đầu file, để chạy được cả khi code đang hỏng và đó chính là thứ cần chẩn đoán.
 Exit code 0 = sẵn sàng build, 1 = còn việc phải sửa.
 """
 
@@ -14,8 +15,14 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-PACKAGES = ["streamlit", "openai", "fitz", "pptx", "PIL", "dotenv", "pytest"]
+PACKAGES = ["streamlit", "openai", "fitz", "pptx", "dotenv", "pytest"]
 OK, WARN, BAD = "[ok]  ", "[warn]", "[BAD] "
+
+# Console Windows mặc định cp1252, không in nổi tiếng Việt: script chẩn đoán mà
+# tự chết vì UnicodeEncodeError thì mất đúng lúc cần nó nhất.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
 
 
 def _version(mod) -> str:
@@ -24,6 +31,34 @@ def _version(mod) -> str:
         if isinstance(v, str):
             return v
     return "?"
+
+
+def _check_prompts() -> list[str]:
+    """Mọi prompt phải nạp được và có đủ hai mục.
+
+    Đáng kiểm ở đây vì prompt hỏng chỉ lộ ra lúc bấm nút — tức là giữa buổi demo.
+    """
+    print("\n--- prompt ---")
+    problems: list[str] = []
+    try:
+        sys.path.insert(0, str(HERE))
+        from agent_core import prompting
+    except Exception as exc:  # noqa: BLE001
+        print(f"{BAD}không import được agent_core.prompting: {exc}")
+        return ["agent_core/prompting.py không import được — xem lỗi ngay trên."]
+
+    for prompt_id in ("route", "summarize", "quiz", "ask", "outline"):
+        try:
+            prompt = prompting.load(prompt_id)
+        except Exception as exc:  # noqa: BLE001
+            print(f"{BAD}{prompt_id:<10} {exc}")
+            problems.append(f"Prompt '{prompt_id}' không nạp được.")
+            continue
+        if not prompt.user_template.strip():
+            print(f"{WARN}{prompt_id:<10} {prompt.version} — mục '# USER' rỗng")
+        else:
+            print(f"{OK}{prompt_id:<10} {prompt.version}")
+    return problems
 
 
 def main() -> int:
@@ -94,6 +129,16 @@ def main() -> int:
     traces = HERE.parent / "eval" / "traces"
     traces.mkdir(parents=True, exist_ok=True)
     print(f"{OK}eval/traces/ sẵn sàng ({traces})")
+
+    print("\n--- cấu trúc agent ---")
+    for folder in ("agent_core", "app", "prompts", "providers", "tools"):
+        if (HERE / folder).is_dir():
+            print(f"{OK}{folder}/")
+        else:
+            print(f"{BAD}{folder}/ không có")
+            problems.append(f"Thiếu thư mục {folder}/ — repo bị lệch so với STRUCTURE.md.")
+
+    problems += _check_prompts()
 
     if args.models or args.ping:
         print("\n--- gọi OpenAI ---")
