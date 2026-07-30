@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-PACKAGES = ["streamlit", "openai", "fitz", "pptx", "PIL", "dotenv", "yaml", "pytest"]
+PACKAGES = ["streamlit", "openai", "fitz", "pptx", "PIL", "dotenv", "pytest"]
 OK, WARN, BAD = "[ok]  ", "[warn]", "[BAD] "
 
 

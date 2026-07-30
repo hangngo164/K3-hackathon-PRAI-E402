@@ -1,11 +1,19 @@
+# Pin theo môi trường đã kiểm chạy được (Windows, Python 3.12.6 — xem codebase/README.md).
+# Dùng ~= : cho phép bản patch mới, chặn bản major/minor đổi API.
+# Cả nhóm cài từ file này để không lệch version giữa các máy.
+
 # Runtime
-streamlit>=1.40          # UI: viewer + panel (st.fragment cần >=1.33)
-openai>=1.55             # structured output json_schema strict
-pymupdf>=1.24            # parse PDF (text + bbox) + render trang -> PNG  [AGPL: xem ARCHITECHTURE.md §6]
-python-pptx>=1.0         # đọc PPTX khi máy không có LibreOffice
-pillow>=10.4             # vẽ overlay highlight lên ảnh trang
-python-dotenv>=1.0       # nạp .env (core/ chạy được ngoài Streamlit)
-pyyaml>=6.0              # eval/golden-set
+streamlit~=1.60          # UI: viewer + panel. st.fragment cần >=1.33 — cài bản cũ hơn là viewer vỡ
+openai~=2.50             # structured output json_schema strict + usage.cached_tokens
+pymupdf~=1.28            # parse PDF (text + bbox) + render trang -> PNG  [AGPL: xem ARCHITECHTURE.md §6]
+python-pptx~=1.0         # đọc PPTX khi máy không có LibreOffice
+pillow~=12.3             # vẽ overlay highlight lên ảnh trang
+python-dotenv~=1.2       # nạp .env (core/ chạy được ngoài Streamlit)
 
 # Dev
-pytest>=8.3
+pytest~=9.1
+
+# KHÔNG khai ở đây (có sẵn theo transitive dep của streamlit): pandas, numpy, pyarrow, altair.
+#   -> Nếu code thật `import pandas` thì PHẢI thêm dòng `pandas~=3.0` vào mục Runtime,
+#      không dựa vào việc streamlit tình cờ cài nó.
+# Không cần: pyyaml (golden set là CSV, csv nằm trong stdlib) · tiktoken (est_tokens là ước lượng thô)
