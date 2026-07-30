@@ -485,30 +485,13 @@ Mỗi case: `case_id · fixture (file slide + scope + target) · lớp chỗ kh�
 
 ## 16. Cấu trúc code
 
-```
-codebase/
-├── app.py                    entrypoint Streamlit (~120 dòng: layout + điều phối)
-├── requirements.txt          streamlit, openai, pymupdf, python-pptx, pillow, pyyaml
-├── .env.example              OPENAI_API_KEY=, OPENAI_MODEL_FAST=, OPENAI_MODEL_MAIN=
-├── core/
-│   ├── models.py  convert.py  ingest.py  outline.py  render.py
-│   ├── scope.py   summarize.py  quiz.py   verify.py
-│   └── llm.py     cache.py      log.py
-├── prompts/
-│   ├── summarize.v1.md
-│   ├── quiz.v1.md
-│   └── outline.v1.md
-├── ui/
-│   ├── state.py              khởi tạo + đọc/ghi session_state
-│   ├── viewer.py             ảnh trang + overlay + block picker + điều hướng
-│   ├── panel_summary.py
-│   ├── panel_quiz.py
-│   └── sidebar.py            upload · outline tree · cost · trạng thái key
-└── tests/
-    ├── test_bbox_scale.py    highlight vẽ đúng chỗ
-    ├── test_verify.py        quote giả phải bị loại
-    └── fixtures/slide-demo.pdf
-```
+> **Cây thư mục đầy đủ, trách nhiệm từng module, luật phụ thuộc, quy ước đặt tên và thứ tự tạo file theo mốc: `repo/STRUCTURE.md`** — đó là nguồn sự thật duy nhất về cấu trúc, mục này không lặp lại để tránh hai bản mô tả lệch nhau.
+
+Ba điều chỉnh so với bản thiết kế ban đầu, đã phản ánh trong `STRUCTURE.md`:
+
+- thêm `core/config.py` (ngưỡng + đường dẫn), `core/errors.py` (exception theo 4 lớp chỗ khó), `core/schemas.py` (hợp đồng output dùng chung cho `llm.py`, `verify.py`, `eval/run.py`);
+- golden set dùng `eval/golden-set.csv` đã có trong khung nộp bài, không tạo file YAML riêng;
+- `eval/run.py` nằm ngoài `codebase/` nên phải tự thêm `sys.path` tới `codebase/` ở đầu file.
 
 Layout UI: `st.columns([3, 2])` — trái viewer, phải panel `st.tabs(["Tóm tắt", "Quiz"])`; sidebar giữ upload + cây outline + trạng thái.
 

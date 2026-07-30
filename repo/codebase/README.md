@@ -36,20 +36,15 @@ Không kích hoạt venv thì gọi trực tiếp: `.\.venv\Scripts\python.exe c
 
 ## Cấu trúc
 
-```
-codebase/
-├── app.py            hiện là trang kiểm tra môi trường; CP2 thay bằng viewer + panel
-├── check_env.py      kiểm python/package/key/LibreOffice/quyền ghi
-├── requirements.txt
-├── .env.example      mẫu biến môi trường (.env thật không commit)
-├── .streamlit/       config.toml + mẫu secrets.toml
-├── core/             logic thuần Python, KHÔNG import streamlit
-├── ui/               layout Streamlit + session_state
-├── prompts/          prompt có version: summarize.v1.md, quiz.v1.md ...
-└── tests/            pytest
-```
+Cây thư mục đầy đủ + trách nhiệm từng module + luật phụ thuộc: **`../STRUCTURE.md`**.
 
-Thiết kế đầy đủ của từng module: `ARCHITECHTURE.md` §16 (ở repo đề bài).
+Ba điều cần nhớ khi viết code ở đây:
+
+1. `core/` **không import `streamlit`** — vi phạm là `eval/run.py` chết, mất bảng đo cho R4.
+2. `ui/` import `core/`, không bao giờ ngược lại. `app.py` chỉ nối hai bên, không chứa logic.
+3. Prompt là file có version trong `prompts/` — đổi nội dung thì tạo `.v2.md`, không sửa tại chỗ, và ghi changelog `spec.md §9`.
+
+Mỗi module chưa viết đều có sẵn docstring nói rõ trách nhiệm, ranh giới ("không được làm gì") và mốc phải xong (`TODO(CP2)` / `TODO(CP3)` ...).
 
 ## Biến môi trường
 
