@@ -1,4 +1,4 @@
-# AI SPEC — Trợ lý Ôn Slide · Nhóm [XX] · Zone [X]
+# AI SPEC — Trợ lý Ôn Slide · Nhóm [PRAI] · Zone [B]
 
 Hướng: [x] A — VLearn  [ ] B — Trợ lý Học viên  [ ] C — Làn mở
 Loại: [ ] Tối ưu tính năng có sẵn  [x] Tính năng mới
@@ -10,16 +10,7 @@ Loại: [ ] Tối ưu tính năng có sẵn  [x] Tính năng mới
 - Problem statement (không dùng chữ AI): tài liệu slide dài, nhiều trang chỉ có ý chính hoặc hình, nên người học khó biết phải ôn phần nào trước, khó tự tạo câu hỏi ôn tập, và cũng khó hỏi lại mà không bị trả lời lan man.
 - Evidence:
 
-  - Evidence:
-    - Đã phân tích 2.522 dòng chatlog ẩn danh. Golden set có 30 case, gồm
-      13 case thường, 13 case rủi ro và 4 case hiếm. Trong đó có 10 case
-      phát triển trực tiếp từ lời người học thật.
-    - Ví dụ nguyên văn:
-      - “tóm tắt nội dung chính trong slide này” — chatlog C0001/T0649/M1149
-      - “giải thích 4 chiến lược” — chatlog C0002/T0959/M1109
-      - “tạo quiz để tôi hiểu rõ và ôn lại slide này” — chatlog C0063/T0849/M0003
-      - “tóm tắt hết slide trong vài câu đi” — chatlog C0020/T0122/M2504
-      - “Tại sao câu này tôi lại chọn sai, hãy giải thích” — chatlog C0023/T0399/M1331
+  Qua khảo sát nhóm thu được số liệu sau:  Gần 80% Học viên học AI thực chiến Khóa 3&4 đang gặp khó khăn khi họ muốn ôn lại kiến thức lí thuyết trong bối cảnh có nhiều slide, nhiều kiến thức với thời gian ngắn, hiện tại qua khảo sát,  11% các bạn trong số đó đang dùng Vlearn tutor hỗ trợ ôn lại bài, 33% về nhà tự xem lại slide, 33% các bạn bỏ qua và học tiếp bài mời, còn lại là hỏi bạn bè, thầy cô.
 
 ## §2. Impact & quyết định chọn
 
@@ -89,7 +80,7 @@ Loại: [ ] Tối ưu tính năng có sẵn  [x] Tính năng mới
 
 ## §8. Phân công & kế hoạch
 
-Phân công chính: 
+Phân công chính:
 
 * Nguyễn Huy Hoàng:  prompt, schema, provider, verifier và retriaval
 * Nguyễn Thị Hoàng Yến: pipeline đọc tài liệu, outline, scope, UI.
