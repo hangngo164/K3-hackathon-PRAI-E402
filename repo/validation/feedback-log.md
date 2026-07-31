@@ -2,12 +2,10 @@
 
 Yêu cầu: ít nhất 5 feedback từ 5 người ngoài nhóm, trong đó có ít nhất 2 willing users đã khai tại CP1.
 
-| ID | Người thử/vai trò | Case đã thử | Quote nguyên văn | Quan sát | Quyết định thay đổi |
-|---|---|---|---|---|---|
-| F01 | | | | | |
-
-## Kịch bản user test
-
-1. Sau khi dùng thử, bạn nghĩ tính năng này giúp mình làm việc gì?
-2. Có câu hỏi/đáp án nào khiến bạn không tin tưởng? Vì sao?
-3. Nếu dùng sau một buổi học thật, bước nào khiến bạn có thể bỏ cuộc?
+| ID  | Người thử/vai trò   | Case đã thử    | Quote nguyên văn                                                                                      | Quan sát                                                                                                                     | Hướng cải thiện                                                                                                  |
+| --- | ----------------------- | ----------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| F01 | Trần Công Chiến      | Bài quiz         | "Bài quiz có thể phân chia mức độ dễ, khó, trung bình sẽ tiện lợi hơn cho học viên"     | Học viên muốn quiz được cá nhân hoá theo độ khó để dễ chọn bài phù hợp năng lực.                         | Cân nhắc bổ sung nhãn mức độ cho từng quiz và cho phép lọc theo độ khó.                                |
+| F02 | Phạm Khắc Duy         | Xem đáp án     | "Nếu có giải thích đáp án sai và dẫn lại đúng slide thì em sẽ dễ ôn hơn."              | Người dùng muốn biết vì sao sai và xem lại đúng phần kiến thức.                                                  | Thêm phần giải thích đáp án và liên kết đến slide nguồn.                                                |
+| F03 | Nguyễn Hữu Nhật Minh | Ôn tập          | "Tôi muốn AI chỉ tạo quiz từ những slide em đã học hôm nay, không lấy cả chương."       | Người dùng muốn quiz đúng phạm vi đã học để tránh quá tải.                                                     | Giới hạn phạm vi tạo quiz theo các slide đã xem hoặc đã hoàn thành.                                      |
+| F04 | Nguyễn Đức Thiện   | Sau khi làm quiz | "Nếu AI lưu lại các câu tôi làm sai và nhắc ôn lại sau vài ngày thì sẽ hữu ích hơn." | Người dùng mong muốn hệ thống hỗ trợ ôn tập lặp lại để ghi nhớ lâu hơn.                                      | Bổ sung tính năng lưu câu sai và tạo quiz ôn lại theo lịch.                                                |
+| F05 | Nguyễn Thùy Trang     | Ôn tập          | "Tôi muốn sau khi hỏi AI xong có thể tạo quiz ngay từ phần em vừa hỏi."                      | Người dùng muốn kết nối giữa phần giao tiếp với AI Agents và Quiz để ôn tập ngay kiến thức vừa tìm hiểu. | Thêm chức năng tạo quiz từ cuộc hội thoại để sinh câu hỏi dựa trên nội dung vừa trao đổi với AI. |
